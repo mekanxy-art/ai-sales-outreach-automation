@@ -1,0 +1,2128 @@
+{
+  "name": "manuell search",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        128,
+        -32
+      ],
+      "id": "ea7bc674-fa20-48b4-953d-ce7be9865975",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Du bist Vertriebsassistent für Your Company.\n\nUnternehmen: {{$json.company_name}}\n\nApollo-Kandidaten:\n{{$json.contacts_text}}\n\nWähle den besten Ansprechpartner für Your Company aus.\n\nBevorzuge:\nFounder, CEO, Managing Director, Head of E-Commerce, E-Commerce Manager, Head of Marketing, Marketing Manager, Head of CRM, CRM Manager, Head of Growth, Growth Manager, Head of Digital, Partnerships Manager.\n\nWichtig:\n- Bevorzuge Kontakte mit verfügbarer Email\n- Bevorzuge fachlich passende Entscheider\n- Wenn mehrere gut passen, nimm den mit Email-Verfügbarkeit\n- Keine Halluzinationen\n- Nutze nur die Daten aus der Liste\n\nAntworte nur als gültiges JSON:\n{\n  \"apollo_person_id\": \"\",\n  \"name\": \"\",\n  \"title\": \"\",\n  \"company\": \"\",\n  \"has_email\": \"\",\n  \"has_direct_phone\": \"\",\n  \"why_fit\": \"\"\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1072,
+        464
+      ],
+      "id": "36e1e43e-d283-4d36-b272-95c405504290",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let raw = $json.output[0].content[0].text;\n\nif (typeof raw !== \"string\") {\n  raw = JSON.stringify(raw);\n}\n\nraw = raw.trim();\n\nif (raw.startsWith(\"```json\")) {\n  raw = raw.replace(/^```json\\s*/, \"\").replace(/\\s*```$/, \"\");\n} else if (raw.startsWith(\"```\")) {\n  raw = raw.replace(/^```\\s*/, \"\").replace(/\\s*```$/, \"\");\n}\n\nconst parsed = JSON.parse(raw);\n\nreturn {\n  json: Array.isArray(parsed) ? { items: parsed } : parsed\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        464
+      ],
+      "id": "ee5406f3-0317-4656-8800-aa8cb4d88524",
+      "name": "parse contact"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Leads CRM2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1458518171,
+          "mode": "list",
+          "cachedResultName": "Opportunities",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=1458518171"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -176,
+        -128
+      ],
+      "id": "91bc95fa-3fe5-4488-9cb2-c6acc807c2c9",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "09eafa76-172c-474a-bba1-c5795eff2fde",
+              "leftValue": "={{ ($json[\"Name\"] ?? \"\").toString().trim() }}",
+              "rightValue": "smoby",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "b02e2e35-60f2-4bd4-a94e-a699e232961c",
+              "leftValue": "={{ ($json[\"Reachout gemacht?\"] ?? \"\").toString().trim() }}",
+              "rightValue": "Ja",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        512,
+        16
+      ],
+      "id": "b17e4400-90c5-4196-bc90-da068d758753",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        768,
+        -48
+      ],
+      "id": "0bf1e79a-0d26-4c81-bb0c-1e08f030a1bb",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Leads CRM2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 370756667,
+          "mode": "list",
+          "cachedResultName": "Opportunities (cleaned)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=370756667"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "Bot",
+            "Reachout gemacht?": "Keine Apollo Mail",
+            "Company Name": "={{ $('normalize lead').first().json.original_company_field }}"
+          },
+          "matchingColumns": [
+            "Company Name"
+          ],
+          "schema": [
+            {
+              "id": "Company Name",
+              "displayName": "Company Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reachout gemacht?",
+              "displayName": "Reachout gemacht?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Art des Reachout",
+              "displayName": "Art des Reachout",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Antwort erhalten",
+              "displayName": "Antwort erhalten",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Antwortqualität",
+              "displayName": "Antwortqualität",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Interesse am Webshop-Audit",
+              "displayName": "Interesse am Webshop-Audit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Termin vereinbart?",
+              "displayName": "Termin vereinbart?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead Status",
+              "displayName": "Lead Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name (First)",
+              "displayName": "Name (First)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Telefonnummer",
+              "displayName": "Telefonnummer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "E-Mail",
+              "displayName": "E-Mail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Website",
+              "displayName": "Website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "$ Value",
+              "displayName": "$ Value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Linkedin Profile",
+              "displayName": "Linkedin Profile",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "State/Country",
+              "displayName": "State/Country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date Created",
+              "displayName": "Date Created",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Opportunity Last Modified",
+              "displayName": "Opportunity Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2160,
+        848
+      ],
+      "id": "03e4e4ba-4cd5-465e-a275-35b4151ab8fa",
+      "name": "Update row in sheet falls keine mail",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Leads CRM2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 370756667,
+          "mode": "list",
+          "cachedResultName": "Opportunities (cleaned)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=370756667"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "Bot",
+            "Reachout gemacht?": "Ja",
+            "Art des Reachout": "Cold E-Mail",
+            "Company Name": "={{ $('normalize lead').first().json.original_company_field }}"
+          },
+          "matchingColumns": [
+            "Company Name"
+          ],
+          "schema": [
+            {
+              "id": "Company Name",
+              "displayName": "Company Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Reachout gemacht?",
+              "displayName": "Reachout gemacht?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Art des Reachout",
+              "displayName": "Art des Reachout",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Antwort erhalten",
+              "displayName": "Antwort erhalten",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Antwortqualität",
+              "displayName": "Antwortqualität",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Interesse am Webshop-Audit",
+              "displayName": "Interesse am Webshop-Audit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Termin vereinbart?",
+              "displayName": "Termin vereinbart?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Lead Status",
+              "displayName": "Lead Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Name (First)",
+              "displayName": "Name (First)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Telefonnummer",
+              "displayName": "Telefonnummer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "E-Mail",
+              "displayName": "E-Mail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Website",
+              "displayName": "Website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "$ Value",
+              "displayName": "$ Value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Linkedin Profile",
+              "displayName": "Linkedin Profile",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "State/Country",
+              "displayName": "State/Country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Date Created",
+              "displayName": "Date Created",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Opportunity Last Modified",
+              "displayName": "Opportunity Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3632,
+        688
+      ],
+      "id": "ed46cf8e-7766-41d4-9eef-deb3e1266b23",
+      "name": "Update row in sheet falls Mail",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e62f007b-dab4-4ae8-ac62-b8a3c83e4fc6",
+              "leftValue": "={{ ($json[\"contact_email\"] ?? \"\").toString().trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1888,
+        464
+      ],
+      "id": "57e34bbe-2bfe-4b34-97bd-c9299eb18d42",
+      "name": "überprüft gibt es eine mail"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apollo.io/api/v1/people/match",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_APOLLO_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"id\": \"{{$json['apollo_person_id']}}\",\n  \"reveal_personal_emails\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1552,
+        464
+      ],
+      "id": "2ca2c67c-b5d5-4132-afb3-315116763adb",
+      "name": "findet mail"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const lead = $items(\"normalize lead\", 0, 0)[0]?.json ?? {};\nconst contact = $json.person ?? $json ?? {};\n\nconst companyFromLead = (\n  lead.company_name ??\n  lead.company_name_clean ??\n  lead[\"Company Name\"] ??\n  \"\"\n).toString().trim();\n\nconst companyFromOrg = (\n  contact.organization?.name ??\n  $json.organization?.name ??\n  \"\"\n).toString().trim();\n\nconst organizationCountry = (\n  contact.organization?.country ??\n  contact.country ??\n  $json.organization?.country ??\n  $json.country ??\n  \"\"\n).toString().trim();\n\nconst contactCountryValue = (\n  contact.country ??\n  $json.country ??\n  \"\"\n).toString().trim();\n\nconst email = (\n  contact.email ??\n  $json.email ??\n  \"\"\n).toString().trim();\n\nconst domain = email.includes(\"@\")\n  ? email.split(\"@\")[1].toLowerCase().trim()\n  : \"\";\n\nconst companyFromDomain = domain\n  ? domain\n      .replace(/^www\\./i, \"\")\n      .replace(/\\.(com|de|ch|at|net|org|io|co\\.uk)$/i, \"\")\n      .replace(/[-_]/g, \" \")\n      .trim()\n  : \"\";\n\nconst companyName = (\n  companyFromLead ||\n  companyFromOrg ||\n  companyFromDomain\n).trim();\n\nconst websiteUrl = (\n  lead.website_url ??\n  lead[\"Website URL\"] ??\n  (domain ? `https://${domain}` : \"\")\n).toString().trim();\n\nconst firstName = (\n  contact.first_name ??\n  $json.first_name ??\n  \"\"\n).toString().trim();\n\nconst lastName = (\n  contact.last_name ??\n  $json.last_name ??\n  \"\"\n).toString().trim();\n\nconst fullName = (\n  contact.name ??\n  $json.name ??\n  `${firstName} ${lastName}`\n).toString().trim();\n\nconst title = (\n  contact.title ??\n  $json.title ??\n  \"\"\n).toString().trim();\n\nreturn {\n  json: {\n    company_name: companyName,\n    website_url: websiteUrl,\n    contact_first_name: firstName,\n    contact_last_name: lastName,\n    contact_full_name: fullName,\n    contact_title: title,\n    contact_email: email,\n    debug_company_name: companyName,\n    debug_contact_email: email,\n    debug_email_domain: domain,\n    organization_country: organizationCountry,\n    contact_country: contactCountryValue\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        464
+      ],
+      "id": "07bd9834-13a8-4527-90d8-7924355b8613",
+      "name": "prepare mail input"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const possibleValues = [\n  $json.text,\n  $json.output_text,\n  $json.message,\n  $json.response,\n  $json.content?.[0]?.text,\n  $json.content?.[0]?.content?.[0]?.text,\n  $json.output?.[0]?.content?.[0]?.text,\n  $json.response?.output?.[0]?.content?.[0]?.text,\n  $json.data?.[0]?.content?.[0]?.text,\n];\n\nlet raw = \"\";\n\nfor (const value of possibleValues) {\n  if (typeof value === \"string\" && value.trim()) {\n    raw = value.trim();\n    break;\n  }\n}\n\nlet parsed = {};\n\nif (raw) {\n  try {\n    parsed = JSON.parse(raw);\n  } catch (e) {\n    const match = raw.match(/\\{[\\s\\S]*\\}/);\n    if (match) {\n      try {\n        parsed = JSON.parse(match[0]);\n      } catch (e2) {\n        parsed = {};\n      }\n    }\n  }\n}\n\nreturn {\n  json: {\n    language: parsed.language === \"de\" ? \"de\" : \"en\",\n    salutation: (parsed.salutation ?? \"\").toString().trim(),\n    subject: (parsed.subject ?? \"\").toString().trim(),\n    company_intro: (parsed.company_intro ?? \"\").toString().trim()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3088,
+        544
+      ],
+      "id": "37c403bf-4265-4aba-bc13-7daed5f6c7c3",
+      "name": "parse gpt output"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const prep = $items(\"prepare mail input\", 0, 0)[0]?.json ?? {};\nconst gpt = $items(\"parse gpt output\", 0, 0)[0]?.json ?? {};\n\nlet shop = {};\ntry {\n  shop = $items(\"build shop context\", 0, 0)[0]?.json ?? {};\n} catch (e) {\n  shop = {};\n}\n\nlet langSource = {};\ntry {\n  langSource = $items(\"language_guess1\", 0, 0)[0]?.json ?? {};\n} catch (e) {\n  try {\n    langSource = $items(\"language_guess\", 0, 0)[0]?.json ?? {};\n  } catch (e2) {\n    langSource = {};\n  }\n}\n\nconst language = langSource.language_guess === \"de\" ? \"de\" : \"en\";\n\nconst companyName = (prep.company_name || \"\").trim();\nconst contactEmail = (prep.contact_email || \"\").trim();\nconst firstName = (prep.contact_first_name || \"\").trim();\n\nconst subject = (gpt.subject || `Your Company x ${companyName || \"Unternehmen\"}`).trim();\n\nconst salutation = (\n  gpt.salutation ||\n  (language === \"de\"\n    ? \"Guten Tag,\"\n    : (firstName ? `Hello ${firstName},` : \"Hello,\"))\n).trim();\n\nconst pageTitle = (shop.page_title || \"\").trim();\nconst metaDescription = (shop.meta_description || \"\").trim();\nconst h1 = (shop.h1 || \"\").trim();\nconst websiteText = (shop.website_text || \"\").trim();\n\nlet companyIntro = (gpt.company_intro || \"\").trim();\n\nif (!companyIntro) {\n  const hasWebsiteSignals = !!(pageTitle || metaDescription || h1 || websiteText);\n\n  if (language === \"de\") {\n    if (hasWebsiteSignals) {\n      companyIntro = `ich habe mir ${companyName} angesehen. Dabei wirkt der Auftritt insgesamt klar und gut strukturiert. Gerade an den Stellen, an denen Besucher vom ersten Interesse in den passenden nächsten Schritt geführt werden, liegen aus meiner Sicht oft gute Hebel.`;\n    } else {\n      companyIntro = `ich habe mir ${companyName} angesehen. Dabei hatte ich das Gefühl, dass schon vieles gut angelegt ist. Gerade in der Nutzerführung und in den Einstiegen liegen aus meiner Sicht oft gute Hebel, um noch mehr aus bestehendem Traffic herauszuholen.`;\n    }\n  } else {\n    if (hasWebsiteSignals) {\n      companyIntro = `I took a look at ${companyName}. The overall setup already feels clear and well structured. In my experience, some of the best opportunities usually sit in how visitors are guided from initial interest to the right next step.`;\n    } else {\n      companyIntro = `I took a look at ${companyName}. My impression was that a lot is already set up well. At the same time, there are often good opportunities in guidance and entry points to get more out of existing traffic.`;\n    }\n  }\n}\n\nlet body = \"\";\n\nif (language === \"de\") {\n  body = `${salutation}\n\nich hoffe, es geht Ihnen gut.\n\n${companyIntro}\n\nKurz zu mir:\nIch bin Your Name, Sales Executive Partner bei Your Company. Wir unterstützen Marken dabei, Shops und Websites in den Bereichen Nutzerführung, Performance und Markenwirkung so zu optimieren, dass sie messbar besser performen unter anderem für several well-known brands sowie viele weitere.\n\nGerne zeige ich Ihnen in einem unverbindlichen 15-minütigen Erstgespräch 2–3 konkrete Ansatzpunkte, die ich speziell bei Ihnen sehe und mit denen sich meist mehr aus dem bestehenden Traffic holen lässt ohne direkt mehr Werbebudget einzusetzen.\n\nBeste Grüße aus Your address\n\nYour Name\nSales Executive Partner\n-\nYour Company\nyou@yourcompany.com\nwww.Your Company.me\n-\nInstagram: www.instagram.com/Your Company.me\nYour Address`;\n} else {\n  body = `${salutation}\n\nI hope you're well.\n\n${companyIntro}\n\nBriefly about me:\nI’m Your Name, Sales Executive Partner at Your Company. We help brands improve their shops and websites so user guidance, performance and brand impact come together more effectively including for several well-known brands and many others.\n\nI'd be happy to share 2–3 concrete ideas I see specifically for your setup in a short, no-obligation 15-minute introductory call often helping brands get more out of existing traffic without simply increasing ad spend.\n\nBest regards from Your address\n\nYour Name\nSales Executive Partner\n-\nYour Company\nyou@yourcompany.com\nwww.Your Company.me\n-\nInstagram: www.instagram.com/Your Company.me\n`;\n}\n\nreturn {\n  json: {\n    language,\n    salutation,\n    subject,\n    company_intro: companyIntro,\n    body,\n    contact_email: contactEmail,\n    company_name: companyName\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        448
+      ],
+      "id": "66a977b3-c03b-4b1c-984b-4571d1e3d79e",
+      "name": "build final mail"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function normalizeUrl(raw) {\n  try {\n    const value = String(raw || '').trim();\n    if (!value) {\n      return {\n        website_url: '',\n        website_host: '',\n        brand_guess: ''\n      };\n    }\n\n    const withProto = value.startsWith('http') ? value : `https://${value}`;\n    const u = new URL(withProto);\n    const host = u.hostname.toLowerCase().replace(/^www\\./, '');\n\n    const firstLabel = host.split('.')[0] || '';\n    const brandGuess = firstLabel.replace(/[-_]+/g, ' ').trim();\n\n    return {\n      website_url: u.origin,\n      website_host: host,\n      brand_guess: brandGuess\n    };\n  } catch {\n    return {\n      website_url: '',\n      website_host: '',\n      brand_guess: ''\n    };\n  }\n}\n\nfunction cleanCompanyName(name) {\n  return String(name || '')\n    .trim()\n    .replace(/^https?:\\/\\//i, '')\n    .replace(/^www\\./i, '')\n    .replace(/\\/.*$/, '')\n    .trim();\n}\n\nconst raw = $json['Company Name'] || '';\nconst rawString = String(raw).trim();\n\nconst isUrlLike =\n  /^https?:\\/\\//i.test(rawString) ||\n  /^www\\./i.test(rawString) ||\n  /^[a-z0-9-]+\\.[a-z]{2,}/i.test(rawString);\n\nconst norm = isUrlLike\n  ? normalizeUrl(rawString)\n  : {\n      website_url: '',\n      website_host: '',\n      brand_guess: cleanCompanyName(rawString)\n    };\n\nreturn {\n  json: {\n    ...$json,\n\n    original_company_field: rawString,\n\n    company_name: norm.brand_guess || cleanCompanyName(rawString),\n    company_name_clean: norm.brand_guess || cleanCompanyName(rawString),\n\n    website_url: $json.website_url || norm.website_url,\n    website_host: norm.website_host,\n    brand_guess: norm.brand_guess,\n\n    lead_input_was_url: isUrlLike\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        256
+      ],
+      "id": "b0c899a2-55b4-4786-b54f-a64bc8b6d5dd",
+      "name": "normalize lead"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const people = ($json.people || []).slice(0, 10);\n\nconst contacts_text = people.map((p, i) => {\n  const firstName = p.first_name || \"\";\n  const lastName = p.last_name || p.last_name_obfuscated || \"\";\n  const title = p.title || \"\";\n  const hasEmail = p.has_email ? \"Ja\" : \"Nein\";\n  const hasDirectPhone = p.has_direct_phone ? \"Ja\" : \"Nein\";\n  const orgName = p.organization?.name || \"\";\n  const personId = p.id || \"\";\n\n  return `${i + 1}. ${firstName} ${lastName} | Titel: ${title} | Email verfügbar: ${hasEmail} | Direktnummer verfügbar: ${hasDirectPhone} | Unternehmen: ${orgName} | Apollo Person ID: ${personId}`;\n}).join(\"\\n\");\n\nreturn {\n  json: {\n    company_name: $json.people?.[0]?.organization?.name || \"\",\n    contacts_text\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        624
+      ],
+      "id": "b1aa84d8-de9f-4b56-ae1e-e01d60c26128",
+      "name": "Kontakt-Auswahl"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b2352a4f-258d-4ea2-9741-52a9a260872d",
+              "leftValue": "={{ ($json[\"website_url\"] ?? \"\").toString().trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2032,
+        112
+      ],
+      "id": "0cc2d5ff-abd5-4352-8ad1-c7c5a0f7a0eb",
+      "name": "IF website_url vorhanden?"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json[\"website_url\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2640,
+        -48
+      ],
+      "id": "58f8724d-1db9-4045-8279-636611241c9e",
+      "name": "fetch website",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Du schreibst keine komplette E-Mail.\n\nDu erstellst nur:\n1. eine Sprache\n2. eine Anrede\n3. einen Betreff\n4. einen kurzen personalisierten Einleitungsabschnitt für eine B2B-Erstkontakt-Mail\n\nWICHTIG:\n- Gib ausschließlich valides JSON zurück.\n- Kein Markdown.\n- Keine Erklärung.\n- Keine Platzhalter wie [Name], {Unternehmen}, <Firma>.\n- Erfinde keine Fakten.\n- Schreibe natürlich, einfach und menschlich.\n- Nicht zu glatt, nicht zu agenturhaft, nicht zu verkopft.\n- Vermeide Beratersprache.\n- Vermeide Formulierungen wie:\n  - \"Als [Titel] ...\"\n  - \"In Ihrer Rolle ...\"\n  - \"Sie tragen sicher dazu bei ...\"\n\nSPRACH-REGELN:\n- Die Sprache ist durch das Eingabefeld language_guess fest vorgegeben.\n- Wenn language_guess = \"de\", schreibe die gesamte Ausgabe auf Deutsch und gib \"language\": \"de\" zurück.\n- Wenn language_guess = \"en\", schreibe die gesamte Ausgabe auf Englisch und gib \"language\": \"en\" zurück.\n- Entscheide die Sprache nicht selbst neu.\n\nANREDE-REGELN:\n- Wenn language = \"de\":\n  - wenn Vorname klar männlich ist und Nachname vorhanden ist: \"Guten Tag Herr [Nachname],\"\n  - wenn Vorname klar weiblich ist und Nachname vorhanden ist: \"Guten Tag Frau [Nachname],\"\n  - sonst: \"Guten Tag,\"\n- Wenn language = \"en\":\n  - wenn Vorname vorhanden ist: \"Hello [FirstName],\"\n  - sonst: \"Hello,\"\n\nBETREFF-REGELN:\n- Muss immer den Firmennamen enthalten.\n- Format bevorzugt: \"Your Company x [Firmenname]\"\n- Niemals leer.\n\nREGELN FÜR company_intro:\n- 2 bis 4 Sätze\n- wenn language = \"de\", dann auf Deutsch\n- wenn language = \"en\", dann auf Englisch\n- beginne bevorzugt mit:\n  - Deutsch: \"ich habe mir [Unternehmen] angesehen.\"\n  - Englisch: \"I took a look at [company].\"\n- schreibe einfach, direkt und natürlich\n- beziehe dich auf 1 bis 2 konkrete Punkte aus den gelieferten Website-Infos\n- fokussiere dich auf Shop, Auftritt, Einstiege, Orientierung, Kategorien, Produktdarstellung oder Vertrauen\n- nenne nur Dinge, die aus den gelieferten Website-Infos wirklich ableitbar sind\n- nichts erfinden\n- keine CTA\n- keine Wiederholung von \"Kurz zu mir\" / \"Briefly about me\"\n- company_intro darf niemals leer sein.\n- Wenn keine sehr konkrete Beobachtung möglich ist, schreibe trotzdem 2 einfache Sätze zum Shop oder Auftritt.\n\nGib genau dieses JSON zurück:\n{\n  \"language\": \"de oder en\",\n  \"salutation\": \"...\",\n  \"subject\": \"...\",\n  \"company_intro\": \"...\"\n}"
+            },
+            {
+              "content": "=Erstelle Anrede, Betreff und den personalisierten Einleitungsabschnitt.\n\nDATEN:\nlanguage_guess: {{ $json[\"language_guess\"] }}\ncompany_name: {{ $('build shop context').first().json[\"company_name\"] }}\ncontact_full_name: {{ $('prepare mail input').first().json[\"contact_full_name\"] }}\ncontact_first_name: {{ $('prepare mail input').first().json[\"contact_first_name\"] }}\ncontact_last_name: {{ $('prepare mail input').first().json[\"contact_last_name\"] }}\ncontact_title: {{ $('prepare mail input').first().json[\"contact_title\"] }}\ncontact_email: {{ $('prepare mail input').first().json[\"contact_email\"] }}\n\nWEBSITE-INFOS:\npage_title: {{ $('build shop context').first().json[\"page_title\"] }}\nmeta_description: {{ $('build shop context').first().json[\"meta_description\"] }}\nh1: {{ $('build shop context').first().json[\"h1\"] }}\nwebsite_text: {{ $('build shop context').first().json[\"website_text\"] }}\n\nWichtig:\n- Die Sprache ist vorgegeben.\n- Wenn language_guess = de, schreibe komplett auf Deutsch.\n- Wenn language_guess = en, schreibe komplett auf Englisch.\n- Entscheide die Sprache nicht selbst neu.\n- Schreibe einfacher und menschlicher.\n- Greife 1 bis 2 konkrete Punkte aus den Website-Infos auf.\n- Bitte nicht auf die Rolle des Kontakts fokussieren.\n- Nichts erfinden.\n- Lieber etwas schlichter als zu glatt.\n- company_intro darf nicht leer sein.\n- Schreibe immer 2 bis 4 Sätze vor \"Kurz zu mir:\" / \"Briefly about me:\".\n\nGib nur JSON zurück."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        2832,
+        320
+      ],
+      "id": "d530c840-ad28-4d7c-b615-1a9f22031ee1",
+      "name": "schreibt den text MIT website",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Erstelle Anrede, Betreff und den personalisierten Einleitungsabschnitt.\n\nDATEN:\nlanguage_guess: {{ $json[\"language_guess\"] }}\ncompany_name: {{ $('prepare mail input').first().json[\"company_name\"] }}\ncontact_full_name: {{ $('prepare mail input').first().json[\"contact_full_name\"] }}\ncontact_first_name: {{ $('prepare mail input').first().json[\"contact_first_name\"] }}\ncontact_last_name: {{ $('prepare mail input').first().json[\"contact_last_name\"] }}\ncontact_title: {{ $('prepare mail input').first().json[\"contact_title\"] }}\ncontact_email: {{ $('prepare mail input').first().json[\"contact_email\"] }}\n\nWichtig:\n- Die Sprache ist vorgegeben.\n- Wenn language_guess = de, schreibe komplett auf Deutsch.\n- Wenn language_guess = en, schreibe komplett auf Englisch.\n- Entscheide die Sprache nicht selbst neu.\n- Schreibe einfacher und menschlicher.\n- Bitte nicht auf die Rolle des Kontakts fokussieren.\n- Keine erfundenen Shop-Details.\n- Lieber schlicht und natürlich als zu glatt.\n- company_intro darf nicht leer sein.\n- Schreibe immer 2 bis 4 Sätze vor \"Kurz zu mir:\" / \"Briefly about me:\".\n\nGib nur JSON zurück."
+            },
+            {
+              "role": "system",
+              "content": "Du schreibst keine komplette E-Mail.\n\nDu erstellst nur:\n1. eine Sprache\n2. eine Anrede\n3. einen Betreff\n4. einen kurzen personalisierten Einleitungsabschnitt für eine B2B-Erstkontakt-Mail\n\nWICHTIG:\n- Gib ausschließlich valides JSON zurück.\n- Kein Markdown.\n- Keine Erklärung.\n- Keine Platzhalter wie [Name], {Unternehmen}, <Firma>.\n- Erfinde keine Fakten.\n- Schreibe natürlich, einfach und menschlich.\n- Nicht zu glatt, nicht zu agenturhaft, nicht zu verkopft.\n- Vermeide Beratersprache.\n- Vermeide Formulierungen wie:\n  - \"Als [Titel] ...\"\n  - \"In Ihrer Rolle ...\"\n  - \"Sie tragen sicher dazu bei ...\"\n\nSPRACH-REGELN:\n- Die Sprache ist durch das Eingabefeld language_guess fest vorgegeben.\n- Wenn language_guess = \"de\", schreibe die gesamte Ausgabe auf Deutsch und gib \"language\": \"de\" zurück.\n- Wenn language_guess = \"en\", schreibe die gesamte Ausgabe auf Englisch und gib \"language\": \"en\" zurück.\n- Entscheide die Sprache nicht selbst neu.\n\nANREDE-REGELN:\n- Wenn language = \"de\":\n  - wenn Vorname klar männlich ist und Nachname vorhanden ist: \"Guten Tag Herr [Nachname],\"\n  - wenn Vorname klar weiblich ist und Nachname vorhanden ist: \"Guten Tag Frau [Nachname],\"\n  - sonst: \"Guten Tag,\"\n- Wenn language = \"en\":\n  - wenn Vorname vorhanden ist: \"Hello [FirstName],\"\n  - sonst: \"Hello,\"\n\nBETREFF-REGELN:\n- Muss immer den Firmennamen enthalten.\n- Format bevorzugt: \"Your Company x [Firmenname]\"\n- Niemals leer.\n\nREGELN FÜR company_intro:\n- 2 bis 4 Sätze\n- wenn language = \"de\", dann auf Deutsch\n- wenn language = \"en\", dann auf Englisch\n- beginne bevorzugt mit:\n  - Deutsch: \"ich habe mir [Unternehmen] angesehen.\"\n  - Englisch: \"I took a look at [company].\"\n- schreibe einfach, direkt und natürlich\n- bleibe eher allgemein, aber nicht hohl\n- keine erfundenen Details\n- keine CTA\n- keine Wiederholung von \"Kurz zu mir\" / \"Briefly about me\"\n\nGib genau dieses JSON zurück:\n{\n  \"language\": \"de oder en\",\n  \"salutation\": \"...\",\n  \"subject\": \"...\",\n  \"company_intro\": \"...\"\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        2576,
+        800
+      ],
+      "id": "c098e52b-5ae1-4b88-8ef4-dfa95c9f4729",
+      "name": "schreibt den text OHNE website",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let prep = {};\n\ntry {\n  prep = $items(\"parse web search output\", 0, 0)[0]?.json ?? {};\n} catch (e) {\n  prep = $items(\"prepare mail input\", 0, 0)[0]?.json ?? {};\n}\n\nconst website = $json ?? {};\n\nconst html =\n  website.body ??\n  website.data ??\n  website.responseBody ??\n  website.content ??\n  website.html ??\n  \"\";\n\nconst htmlString = (html ?? \"\").toString();\n\nconst blockedSignals = [\n  \"just a moment\",\n  \"cloudflare\",\n  \"attention required\",\n  \"cf-chl\",\n  \"enable javascript and cookies\"\n];\n\nconst websiteBlocked = blockedSignals.some(signal =>\n  htmlString.toLowerCase().includes(signal)\n);\n\nconst getTitle = (input) => {\n  const match = input.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i);\n  return match ? match[1].replace(/\\s+/g, \" \").trim() : \"\";\n};\n\nconst getMetaDescription = (input) => {\n  const match = input.match(/<meta[^>]*name=[\"']description[\"'][^>]*content=[\"']([^\"']*)[\"'][^>]*>/i);\n  return match ? match[1].replace(/\\s+/g, \" \").trim() : \"\";\n};\n\nconst getFirstH1 = (input) => {\n  const match = input.match(/<h1[^>]*>([\\s\\S]*?)<\\/h1>/i);\n  return match\n    ? match[1].replace(/<[^>]+>/g, \" \").replace(/\\s+/g, \" \").trim()\n    : \"\";\n};\n\nconst stripHtml = (input) =>\n  input\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, \" \")\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, \" \")\n    .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, \" \")\n    .replace(/<[^>]+>/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n\nconst pageTitle = websiteBlocked ? \"\" : getTitle(htmlString);\nconst metaDescription = websiteBlocked ? \"\" : getMetaDescription(htmlString);\nconst h1 = websiteBlocked ? \"\" : getFirstH1(htmlString);\nconst websiteText = websiteBlocked ? \"\" : stripHtml(htmlString).slice(0, 3000);\n\nreturn {\n  json: {\n    ...prep,\n    page_title: pageTitle,\n    meta_description: metaDescription,\n    h1,\n    website_text: websiteText,\n    website_blocked: websiteBlocked,\n    shop_notes: Array.isArray(prep.shop_notes) ? prep.shop_notes : [],\n    language_hint: (prep.language_hint ?? \"\").toString().trim()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        16
+      ],
+      "id": "0789eb9f-6380-465f-a395-25501a0b120b",
+      "name": "build shop context"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6635bbdb-f099-4030-ae76-7aa3089d3e34",
+              "leftValue": "={{ ($json[\"website_url\"] ?? \"\").toString().trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2400,
+        400
+      ],
+      "id": "076aef1f-0949-48fc-8377-4fa876f3682d",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json ?? {};\n\nconst companyName = (data.company_name || \"\").toLowerCase();\nconst websiteUrl = (data.website_url || \"\").toLowerCase();\nconst contactEmail = (data.contact_email || \"\").toLowerCase();\nconst firstName = (data.contact_first_name || \"\").toLowerCase();\nconst lastName = (data.contact_last_name || \"\").toLowerCase();\nconst title = (data.contact_title || \"\").toLowerCase();\n\nconst organizationCountry = (data.organization_country || \"\").toLowerCase();\nconst contactCountry = (data.contact_country || \"\").toLowerCase();\nconst languageHint = (data.language_hint || \"\").toLowerCase();\n\nconst pageTitle = (data.page_title || \"\").toLowerCase();\nconst metaDescription = (data.meta_description || \"\").toLowerCase();\nconst websiteText = (data.website_text || \"\").toLowerCase();\n\nconst combinedCore = [\n  companyName,\n  websiteUrl,\n  contactEmail,\n  firstName,\n  lastName,\n  title,\n  organizationCountry,\n  contactCountry\n].join(\" \");\n\nconst combinedWebsite = [\n  pageTitle,\n  metaDescription,\n  websiteText,\n  languageHint\n].join(\" \");\n\nlet deScore = 0;\nlet enScore = 0;\n\n// Starke DACH-Signale\nconst strongDeSignals = [\n  \".de\",\n  \".at\",\n  \".ch\",\n  \"gmbh\",\n  \"gmbh & co\",\n  \"kg\",\n  \"ag\",\n  \"e.k.\",\n  \"deutschland\",\n  \"germany\",\n  \"österreich\",\n  \"austria\",\n  \"schweiz\",\n  \"switzerland\"\n];\n\nfor (const signal of strongDeSignals) {\n  if (combinedCore.includes(signal)) deScore += 4;\n}\n\n// DACH-Länder aus CRM / Apollo\nif (\n  organizationCountry.includes(\"germany\") ||\n  organizationCountry.includes(\"deutschland\") ||\n  organizationCountry.includes(\"austria\") ||\n  organizationCountry.includes(\"österreich\") ||\n  organizationCountry.includes(\"switzerland\") ||\n  organizationCountry.includes(\"schweiz\") ||\n  contactCountry.includes(\"germany\") ||\n  contactCountry.includes(\"deutschland\") ||\n  contactCountry.includes(\"austria\") ||\n  contactCountry.includes(\"österreich\") ||\n  contactCountry.includes(\"switzerland\") ||\n  contactCountry.includes(\"schweiz\")\n) {\n  deScore += 6;\n}\n\n// Deutsche Website-Signale nur schwach werten\nconst weakDeSignals = [\n  \"impressum\",\n  \"datenschutz\",\n  \"versand\",\n  \"rückgabe\",\n  \"kontakt\",\n  \"warenkorb\",\n  \"herren\",\n  \"damen\"\n];\n\nfor (const signal of weakDeSignals) {\n  if (combinedWebsite.includes(signal)) deScore += 1;\n}\n\n// Klare nicht-DACH-Signale -> eher Englisch\nconst nonDachSignals = [\n  \".es\",\n  \".fr\",\n  \".it\",\n  \".nl\",\n  \".be\",\n  \".dk\",\n  \".se\",\n  \".no\",\n  \".fi\",\n  \".co.uk\",\n  \"spain\",\n  \"españa\",\n  \"espana\",\n  \"france\",\n  \"italy\",\n  \"netherlands\",\n  \"belgium\",\n  \"denmark\",\n  \"sweden\",\n  \"norway\",\n  \"finland\",\n  \"united kingdom\",\n  \"uk\"\n];\n\nfor (const signal of nonDachSignals) {\n  if (combinedCore.includes(signal)) enScore += 4;\n}\n\n// Internationale / spanische / romanische Namen nur leicht Richtung Englisch\nconst likelyNonGermanNames = [\n  \"laura\",\n  \"jimenez\",\n  \"soler\",\n  \"nikolaos\",\n  \"muhammed\",\n  \"nicola\",\n  \"simone\"\n];\n\nif (likelyNonGermanNames.includes(firstName)) enScore += 1;\nif (likelyNonGermanNames.includes(lastName)) enScore += 1;\n\n// language_hint nur schwach werten, nie dominant\nif (languageHint === \"de\") deScore += 1;\nif (languageHint === \"en\") enScore += 1;\n\n// Standard:\nlet language_guess = \"en\";\n\n// Deutsch nur bei klaren DACH-Signalen\nif (deScore >= 4 && deScore > enScore) {\n  language_guess = \"de\";\n}\n\nreturn {\n  json: {\n    ...data,\n    language_guess,\n    debug_de_score: deScore,\n    debug_en_score: enScore\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2608,
+        400
+      ],
+      "id": "de2c6ed8-eef1-470a-bfb8-b14887688fa3",
+      "name": "language_guess"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json ?? {};\n\nconst companyName = (data.company_name || \"\").toLowerCase();\nconst websiteUrl = (data.website_url || \"\").toLowerCase();\nconst contactEmail = (data.contact_email || \"\").toLowerCase();\nconst firstName = (data.contact_first_name || \"\").toLowerCase();\nconst lastName = (data.contact_last_name || \"\").toLowerCase();\nconst title = (data.contact_title || \"\").toLowerCase();\n\nconst organizationCountry = (data.organization_country || \"\").toLowerCase();\nconst contactCountry = (data.contact_country || \"\").toLowerCase();\nconst languageHint = (data.language_hint || \"\").toLowerCase();\n\nconst pageTitle = (data.page_title || \"\").toLowerCase();\nconst metaDescription = (data.meta_description || \"\").toLowerCase();\nconst websiteText = (data.website_text || \"\").toLowerCase();\n\nconst combinedCore = [\n  companyName,\n  websiteUrl,\n  contactEmail,\n  firstName,\n  lastName,\n  title,\n  organizationCountry,\n  contactCountry\n].join(\" \");\n\nconst combinedWebsite = [\n  pageTitle,\n  metaDescription,\n  websiteText,\n  languageHint\n].join(\" \");\n\nlet deScore = 0;\nlet enScore = 0;\n\n// Starke DACH-Signale\nconst strongDeSignals = [\n  \".de\",\n  \".at\",\n  \".ch\",\n  \"gmbh\",\n  \"gmbh & co\",\n  \"kg\",\n  \"ag\",\n  \"e.k.\",\n  \"deutschland\",\n  \"germany\",\n  \"österreich\",\n  \"austria\",\n  \"schweiz\",\n  \"switzerland\"\n];\n\nfor (const signal of strongDeSignals) {\n  if (combinedCore.includes(signal)) deScore += 4;\n}\n\n// DACH-Länder aus CRM / Apollo\nif (\n  organizationCountry.includes(\"germany\") ||\n  organizationCountry.includes(\"deutschland\") ||\n  organizationCountry.includes(\"austria\") ||\n  organizationCountry.includes(\"österreich\") ||\n  organizationCountry.includes(\"switzerland\") ||\n  organizationCountry.includes(\"schweiz\") ||\n  contactCountry.includes(\"germany\") ||\n  contactCountry.includes(\"deutschland\") ||\n  contactCountry.includes(\"austria\") ||\n  contactCountry.includes(\"österreich\") ||\n  contactCountry.includes(\"switzerland\") ||\n  contactCountry.includes(\"schweiz\")\n) {\n  deScore += 6;\n}\n\n// Deutsche Website-Signale nur schwach werten\nconst weakDeSignals = [\n  \"impressum\",\n  \"datenschutz\",\n  \"versand\",\n  \"rückgabe\",\n  \"kontakt\",\n  \"warenkorb\",\n  \"herren\",\n  \"damen\"\n];\n\nfor (const signal of weakDeSignals) {\n  if (combinedWebsite.includes(signal)) deScore += 1;\n}\n\n// Klare nicht-DACH-Signale -> eher Englisch\nconst nonDachSignals = [\n  \".es\",\n  \".fr\",\n  \".it\",\n  \".nl\",\n  \".be\",\n  \".dk\",\n  \".se\",\n  \".no\",\n  \".fi\",\n  \".co.uk\",\n  \"spain\",\n  \"españa\",\n  \"espana\",\n  \"france\",\n  \"italy\",\n  \"netherlands\",\n  \"belgium\",\n  \"denmark\",\n  \"sweden\",\n  \"norway\",\n  \"finland\",\n  \"united kingdom\",\n  \"uk\"\n];\n\nfor (const signal of nonDachSignals) {\n  if (combinedCore.includes(signal)) enScore += 4;\n}\n\n// Internationale / spanische / romanische Namen nur leicht Richtung Englisch\nconst likelyNonGermanNames = [\n  \"laura\",\n  \"jimenez\",\n  \"soler\",\n  \"nikolaos\",\n  \"muhammed\",\n  \"nicola\",\n  \"simone\"\n];\n\nif (likelyNonGermanNames.includes(firstName)) enScore += 1;\nif (likelyNonGermanNames.includes(lastName)) enScore += 1;\n\n// language_hint nur schwach werten, nie dominant\nif (languageHint === \"de\") deScore += 1;\nif (languageHint === \"en\") enScore += 1;\n\n// Standard:\nlet language_guess = \"en\";\n\n// Deutsch nur bei klaren DACH-Signalen\nif (deScore >= 4 && deScore > enScore) {\n  language_guess = \"de\";\n}\n\nreturn {\n  json: {\n    ...data,\n    language_guess,\n    debug_de_score: deScore,\n    debug_en_score: enScore\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        16
+      ],
+      "id": "a3919ea3-6547-4097-9f5e-4d3c25b466b0",
+      "name": "language_guess1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/mixed_people/api_search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_APOLLO_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"q_organization_name\": \"{{ $('normalize lead').first().json['company_name_clean'] }}\",\n  \"person_titles\": [\n    \"head of ecommerce\",\n    \"ecommerce manager\",\n    \"head of digital\",\n    \"digital manager\",\n    \"head of crm\",\n    \"crm manager\",\n    \"head of marketing\",\n    \"marketing manager\",\n    \"head of growth\",\n    \"growth manager\",\n    \"online marketing manager\",\n    \"head of online marketing\",\n    \"head of digital sales\",\n    \"digital sales manager\",\n    \"head of customer journey\",\n    \"head of cx\",\n    \"head of merchandising\",\n    \"merchandising manager\"\n  ],\n  \"per_page\": 10\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        912,
+        256
+      ],
+      "id": "f61f81c4-6e9a-4fe7-99c9-58c9594075cb",
+      "name": "Apollo search primär"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c4f32336-722a-48ab-82d8-12c9a03176ce",
+              "leftValue": "={{ Array.isArray($json[\"people\"]) && $json[\"people\"].length > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        256
+      ],
+      "id": "6252c19c-c35d-4b86-8ad4-3e9209a72329",
+      "name": "IF brauchbare Kontakte vorhanden?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apollo.io/api/v1/mixed_people/api_search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_APOLLO_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"q_organization_name\": \"{{ $('normalize lead').first().json['company_name_clean'] }}\",\n  \"person_titles\": [\n    \"founder\",\n    \"co founder\",\n    \"ceo\",\n    \"managing director\",\n    \"owner\",\n    \"co owner\"\n  ],\n  \"per_page\": 10\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1360,
+        -96
+      ],
+      "id": "12aca433-0c85-44b8-ae71-8542dc17ea0d",
+      "name": "Apollo search fallback"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const people = Array.isArray($json.people) ? $json.people : [];\n\nconst scoreTitle = (title = \"\") => {\n  const t = title.toLowerCase();\n\n  let score = 0;\n\n  // Stark bevorzugen\n  if (t.includes(\"ecommerce\")) score += 100;\n  if (t.includes(\"digital\")) score += 90;\n  if (t.includes(\"crm\")) score += 85;\n  if (t.includes(\"growth\")) score += 80;\n  if (t.includes(\"online marketing\")) score += 80;\n  if (t.includes(\"customer journey\")) score += 80;\n  if (t.includes(\"cx\")) score += 70;\n  if (t.includes(\"merchandising\")) score += 70;\n  if (t.includes(\"digital sales\")) score += 70;\n  if (t.includes(\"marketing\")) score += 60;\n\n  // Gute Seniority in Fachrolle\n  if (t.includes(\"head\")) score += 20;\n  if (t.includes(\"manager\")) score += 18;\n  if (t.includes(\"lead\")) score += 16;\n  if (t.includes(\"director\")) score += 14;\n\n  // Aktiv abwerten\n  if (t.includes(\"ceo\")) score -= 80;\n  if (t.includes(\"founder\")) score -= 70;\n  if (t.includes(\"owner\")) score -= 70;\n  if (t.includes(\"co-owner\")) score -= 70;\n  if (t.includes(\"managing director\")) score -= 60;\n\n  return score;\n};\n\nconst ranked = people\n  .map(person => ({\n    ...person,\n    title_score: scoreTitle(person.title || \"\")\n  }))\n  .sort((a, b) => b.title_score - a.title_score);\n\nreturn {\n  json: {\n    ...$json,\n    ranked_people: ranked,\n    best_person: ranked[0] || null\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -96
+      ],
+      "id": "5a7bd200-2f98-4d1f-8e09-4b1d2a4f4eea",
+      "name": "rank contacts1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const people = Array.isArray($json.people) ? $json.people : [];\n\nconst scoreTitle = (title = \"\") => {\n  const t = title.toLowerCase();\n\n  let score = 0;\n\n  // Stark bevorzugen\n  if (t.includes(\"ecommerce\")) score += 100;\n  if (t.includes(\"digital\")) score += 90;\n  if (t.includes(\"crm\")) score += 85;\n  if (t.includes(\"growth\")) score += 80;\n  if (t.includes(\"online marketing\")) score += 80;\n  if (t.includes(\"customer journey\")) score += 80;\n  if (t.includes(\"cx\")) score += 70;\n  if (t.includes(\"merchandising\")) score += 70;\n  if (t.includes(\"digital sales\")) score += 70;\n  if (t.includes(\"marketing\")) score += 60;\n\n  // Gute Seniority in Fachrolle\n  if (t.includes(\"head\")) score += 20;\n  if (t.includes(\"manager\")) score += 18;\n  if (t.includes(\"lead\")) score += 16;\n  if (t.includes(\"director\")) score += 14;\n\n  // Aktiv abwerten\n  if (t.includes(\"ceo\")) score -= 80;\n  if (t.includes(\"founder\")) score -= 70;\n  if (t.includes(\"owner\")) score -= 70;\n  if (t.includes(\"co-owner\")) score -= 70;\n  if (t.includes(\"managing director\")) score -= 60;\n\n  return score;\n};\n\nconst ranked = people\n  .map(person => ({\n    ...person,\n    title_score: scoreTitle(person.title || \"\")\n  }))\n  .sort((a, b) => b.title_score - a.title_score);\n\nreturn {\n  json: {\n    ...$json,\n    ranked_people: ranked,\n    best_person: ranked[0] || null\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        256
+      ],
+      "id": "d50ee2da-6dd1-4872-9633-bb823518361e",
+      "name": "rank contacts"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",Your Address
+        "jsCode": "const subject = ($json.subject ?? \"\").toString().trim();\nconst to = ($json.contact_email ?? \"\").toString().trim();\nconst salutation = ($json.salutation ?? \"\").toString().trim();\nconst companyIntro = ($json.company_intro ?? \"\").toString().trim();\nconst language = ($json.language ?? \"de\").toString().trim();\n\nconst escapeHtml = (str) =>\n  (str || \"\")\n    .replace(/&/g, \"&amp;\")\n    .replace(/</g, \"&lt;\")\n    .replace(/>/g, \"&gt;\");\n\nlet introBlock = \"\";\nlet aboutMeBlock = \"\";\nlet ctaBlock = \"\";\nlet closing = \"\";\n\nif (language === \"en\") {\n  introBlock = `<p style=\"margin:0 0 16px 0;\">${escapeHtml(companyIntro)}</p>`;\n\n  aboutMeBlock = `\n    <p style=\"margin:0 0 8px 0;\"><strong>Briefly about me:</strong></p>\n<p style=\"margin:0 0 16px 0;\">\n  I’m <strong>Your Name</strong>, Sales Executive Partner at <strong>Your Company</strong>.\n  We help brands improve their shops and websites so user guidance, performance and brand impact\n  come together more effectively – including for <strong>several well-known brands</strong>,\n  the <strong>several well-known brands</strong> and many others.\n</p>\n  `;\n\n  ctaBlock = `\n    <p style=\"margin:0 0 28px 0;\">\n      I’d be happy to share 2–3 concrete ideas I see specifically for your setup in a short,\n      no-obligation 15-minute introductory call – often helping brands get more out of existing traffic\n      without simply increasing ad spend.\n    </p>\n  `;\n\n  closing = `Best regards from Your address`;\n} else {\n  introBlock = `<p style=\"margin:0 0 16px 0;\">${escapeHtml(companyIntro)}</p>`;\n\n  aboutMeBlock = `\n    <p style=\"margin:0 0 8px 0;\"><strong>Kurz zu mir:</strong></p>\n<p style=\"margin:0 0 16px 0;\">\n  Ich bin <strong>Your Name</strong>, Sales Executive Partner bei <strong>Your Company</strong>.\n  Wir unterstützen Marken dabei, ihre Shops und Websites so weiterzuentwickeln,\n  dass Nutzerführung, Performance und Markenwirkung messbar besser zusammenkommen –\n  unter anderem für den <strong>several well-known brands</strong>, die <strong>several well-known brands</strong> sowie viele weitere.\n</p>\n  `;\n\n  ctaBlock = `\n    <p style=\"margin:0 0 28px 0;\">\n      Gerne zeige ich Ihnen in einem unverbindlichen 15-minütigen Erstgespräch 2–3 konkrete Ansatzpunkte,\n      die ich speziell bei Ihnen sehe und mit denen sich meist mehr aus dem bestehenden Traffic holen lässt\n      – ohne direkt mehr Werbebudget einzusetzen.\n    </p>\n  `;\n\n  closing = `Beste Grüße aus Your address`;\n}\n\nconst html = `\n<html>\n  <body style=\"margin:0; padding:0; background:#ffffff; color:#000000; font-family:Aptos, Calibri, Arial, sans-serif; font-size:11pt; line-height:1.4;\">\n    <div style=\"max-width:900px; color:#000000; font-family:Aptos, Calibri, Arial, sans-serif; font-size:11pt; line-height:1.4;\">\n      <p style=\"margin:0 0 16px 0;\">${escapeHtml(salutation)}</p>\n      <p style=\"margin:0 0 16px 0;\">${language === \"en\" ? \"I hope you're well.\" : \"ich hoffe, es geht Ihnen gut.\"}</p>\n\n      ${introBlock}\n      ${aboutMeBlock}\n      ${ctaBlock}\n\n      <p style=\"margin:0 0 16px 0;\">${closing}</p>\n\n      <p style=\"margin:0;\"><strong>Your Name</strong></p>\n      <p style=\"margin:0 0 12px 0;\">Sales Executive Partner</p>\n\n      <p style=\"margin:0;\"><strong>Your Company</strong></p>\n      <p style=\"margin:0;\"><a href=\"mailto:you@yourcompany.com\" style=\"color:#000000; text-decoration:none;\">you@yourcompany.com</a></p>\n      <p style=\"margin:0 0 12px 0;\"><a href=\"https://www.Your Company.me\" style=\"color:#000000; text-decoration:none;\">www.Your Company.me</a></p>\n\n      <p style=\"margin:0;\">Instagram: <a href=\"https://www.instagram.com/Your Company.me\" style=\"color:#000000; text-decoration:none;\">www.instagram.com/Your Company.me</a></p>\n      <p style=\"margin:0;\"></p>\n    </div>\n  </body>\n</html>\n`;\n\nreturn {\n  json: {\n    ...$json,\n    subject,\n    contact_email: to,\n    body_html: html\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3344,
+        688
+      ],
+      "id": "640f5c6f-ea38-4638-aa8c-32e71d298927",
+      "name": "format final mail html"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.microsoft.com/v1.0/me/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOutlookOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    subject: $json.subject,\n    body: {\n      contentType: \"HTML\",\n      content: $json.body_html\n    },\n    toRecipients: [\n      {\n        emailAddress: {\n          address: $json.contact_email\n        }\n      }\n    ],\n    from: {\n      emailAddress: {\n        address: \"you@yourcompany.com\"\n      }\n    }\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3552,
+        448
+      ],
+      "id": "48a03c1a-1c54-4931-aba8-9a9c2b6e9113",
+      "name": "HTTP Request Draft",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Finde die offizielle Website oder den offiziellen Shop von {{ $json[\"company_name\"] }}.\n\nGib nur kompaktes JSON zurück:\n{\n  \"website_url\": \"...\",\n  \"shop_notes\": [\n    \"...\",\n    \"...\"\n  ],\n  \"language_hint\": \"de oder en\"\n}\n\nRegeln:\n- bevorzuge die offizielle Shop- oder Markenwebsite\n- keine Social-Media-Links\n- keine Marktplätze\n- shop_notes sollen 1 bis 2 einfache, konkrete Beobachtungen sein\n- wenn du keine sichere Website findest, gib website_url als leeren String zurück\n- nichts erfinden",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2080,
+        336
+      ],
+      "id": "bad4aa0e-23e6-4302-9ae9-9fb72869ef6e",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-5.4-mini"
+        },
+        "builtInTools": {
+          "webSearch": {
+            "searchContextSize": "medium"
+          }
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2144,
+        576
+      ],
+      "id": "c5f666a7-1056-47eb-a825-3244177e2fda",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function safeParseAgentOutput(raw) {\n  if (!raw) return {};\n\n  // Falls bereits Objekt\n  if (typeof raw === 'object' && !Array.isArray(raw)) {\n    return raw;\n  }\n\n  let text = String(raw).trim();\n  if (!text) return {};\n\n  // Markdown-Codefences entfernen\n  text = text\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n\n  // Falls vor/nach dem JSON noch Text steht:\n  const firstBrace = text.indexOf('{');\n  const lastBrace = text.lastIndexOf('}');\n  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {\n    text = text.slice(firstBrace, lastBrace + 1);\n  }\n\n  return JSON.parse(text);\n}\n\nfunction normalizeNotes(value) {\n  if (Array.isArray(value)) {\n    return value\n      .map(v => String(v || '').trim())\n      .filter(Boolean);\n  }\n\n  if (typeof value === 'string' && value.trim()) {\n    return value\n      .split('\\n')\n      .map(v => v.replace(/^[-•]\\s*/, '').trim())\n      .filter(Boolean);\n  }\n\n  return [];\n}\n\nfunction normalizeUrl(url) {\n  const value = String(url || '').trim();\n  if (!value) return '';\n\n  if (/^https?:\\/\\//i.test(value)) return value;\n\n  return `https://${value}`;\n}\n\nconst prep = { ...$json };\nconst rawOutput = prep.output || '';\n\nlet parsed = {};\nlet parseError = '';\n\ntry {\n  parsed = safeParseAgentOutput(rawOutput);\n} catch (err) {\n  parseError = String(err.message || err);\n  parsed = {};\n}\n\nconst websiteUrl =\n  normalizeUrl(parsed.website_url) ||\n  normalizeUrl(prep.website_url) ||\n  normalizeUrl(prep.website_url_hint) ||\n  '';\n\nconst shopNotes = normalizeNotes(parsed.shop_notes);\n\nconst languageHintRaw = String(parsed.language_hint || '').trim().toLowerCase();\nconst languageHint =\n  languageHintRaw === 'de' || languageHintRaw === 'en'\n    ? languageHintRaw\n    : '';\n\nreturn {\n  json: {\n    ...prep,\n    website_url: websiteUrl,\n    shop_notes: shopNotes,\n    language_hint: languageHint,\n    website_found_by_search: !!websiteUrl,\n\n    // Debug\n    debug_parse_error: parseError,\n    debug_raw_output: String(rawOutput).slice(0, 2000),\n    debug_parsed_website_url: parsed.website_url || '',\n    debug_parsed_shop_notes_count: shopNotes.length,\n    debug_parsed_language_hint: parsed.language_hint || ''\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2336,
+        160
+      ],
+      "id": "2ab11678-da30-470a-a2f9-0aa968b799e0",
+      "name": "parse web search output"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"Company Name\": \"calamar-menswear.com\",\n  \"Name\": \"\",\n  \"Reachout gemacht?\": \"\",\n  \"Art des Reachout\": \"\",\n  \"row_number\": \"manual\",\n  \"manual_mode\": true,\n  \"test_mode\": true,\n  \"Language Override\": \"\",\n  \"Website\": \"calamar-menswear.com\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        208
+      ],
+      "id": "80888c4e-240b-4f86-bcf0-3efa7b6cce55",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"source_mode\": \"apollo_fashion_dach\",\n  \"max_results\": 50,\n  \"lead_source\": \"Apollo Fashion DACH\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        -432
+      ],
+      "id": "13cb2ff9-43c2-4972-afaf-cab08e3016bd",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "function clean(v) {\n  return String(v || '').trim();\n}\n\nfunction hostFromUrl(url) {\n  try {\n    if (!url) return '';\n    const u = new URL(String(url).startsWith('http') ? url : `https://${url}`);\n    return u.hostname.toLowerCase().replace(/^www\\./, '');\n  } catch {\n    return '';\n  }\n}\n\nfunction cleanName(v) {\n  return clean(v)\n    .toLowerCase()\n    .replace(/[^\\p{L}\\p{N}\\s]/gu, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction findOrgArray(root) {\n  const directCandidates = [\n    'organizations',\n    'accounts',\n    'results',\n    'data',\n    'companies',\n    'mixed_companies',\n    'items'\n  ];\n\n  for (const key of directCandidates) {\n    if (Array.isArray(root?.[key]) && root[key].length) {\n      return root[key];\n    }\n  }\n\n  // eine Ebene tiefer suchen\n  for (const [key, value] of Object.entries(root || {})) {\n    if (value && typeof value === 'object' && !Array.isArray(value)) {\n      for (const nestedKey of directCandidates) {\n        if (Array.isArray(value?.[nestedKey]) && value[nestedKey].length) {\n          return value[nestedKey];\n        }\n      }\n    }\n  }\n\n  // letzte Rettung: erste brauchbare Objekt-Array-Struktur nehmen\n  for (const [key, value] of Object.entries(root || {})) {\n    if (Array.isArray(value) && value.length && typeof value[0] === 'object') {\n      return value;\n    }\n  }\n\n  return [];\n}\n\nconst root = items[0]?.json ?? {};\nconst orgs = findOrgArray(root);\n\nconst mapped = orgs.map(org => {\n  const companyName =\n    clean(org.name) ||\n    clean(org.organization_name) ||\n    clean(org.company_name) ||\n    clean(org.account_name) ||\n    clean(org.account?.name);\n\n  const websiteUrl =\n    clean(org.website_url) ||\n    clean(org.website) ||\n    clean(org.primary_domain) ||\n    clean(org.domain) ||\n    clean(org.organization_website_url);\n\n  const country =\n    clean(org.country) ||\n    clean(org.organization_country) ||\n    clean(org.location?.country) ||\n    clean(org.city_state_country);\n\n  const websiteHost = hostFromUrl(websiteUrl);\n  const companyNameClean = cleanName(companyName);\n\n  return {\n    json: {\n      \"Company Name\": companyName,\n      \"Website URL\": websiteUrl,\n      \"Website Host\": websiteHost,\n      \"Name\": \"\",\n      \"Reachout gemacht?\": \"\",\n      \"Art des Reachout\": \"\",\n      \"Lead Source\": \"Apollo Fashion DACH\",\n      \"organization_country\": country,\n      \"company_name_clean\": companyNameClean,\n      \"manual_mode\": false,\n      \"import_mode\": true,\n\n      // debug\n      debug_source_name: org.name || org.organization_name || org.company_name || '',\n      debug_source_website: org.website_url || org.website || org.primary_domain || org.domain || ''\n    }\n  };\n});\n\n// WICHTIG: nicht alles brutal rausfiltern\nconst filtered = mapped.filter(item =>\n  item.json[\"Company Name\"] || item.json[\"Website URL\"]\n);\n\n// Falls nichts gefunden wurde, gib Debug zurück statt 0 Items\nif (!filtered.length) {\n  return [\n    {\n      json: {\n        debug_message: \"No organizations mapped\",\n        debug_root_keys: Object.keys(root),\n        debug_orgs_length: orgs.length,\n        debug_first_org: orgs[0] || null\n      }\n    }\n  ];\n}\n\nreturn filtered;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -512
+      ],
+      "id": "b5fa6113-f3ae-49d6-b973-b6e061b91926",
+      "name": "normalize sourced orgs"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/mixed_companies/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "=organization_locations[]",
+              "value": "=Germany"
+            },
+            {
+              "name": "=organization_locations[]",
+              "value": "=Austria"
+            },
+            {
+              "name": "=organization_locations[]",
+              "value": "=Switzerland"
+            },
+            {
+              "name": "=q_organization_keyword_tags[]",
+              "value": "=fashion"
+            },
+            {
+              "name": "=q_organization_keyword_tags[]",
+              "value": "=apparel"
+            },
+            {
+              "name": "=q_organization_keyword_tags[]",
+              "value": "=clothing"
+            },
+            {
+              "name": "=q_organization_keyword_tags[]",
+              "value": "=accessories"
+            },
+            {
+              "name": "=q_organization_keyword_tags[]",
+              "value": "=jewelry"
+            },
+            {
+              "name": "=q_organization_keyword_tags[]",
+              "value": "=shoes"
+            },
+            {
+              "name": "=organization_num_employees_ranges[]",
+              "value": "=11,50"
+            },
+            {
+              "name": "=organization_num_employees_ranges[]",
+              "value": "=51,200"
+            },
+            {
+              "name": "=organization_num_employees_ranges[]",
+              "value": "=201,500"
+            },
+            {
+              "name": "=page",
+              "value": "=1"
+            },
+            {
+              "name": "=per_page",
+              "value": "=25"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_APOLLO_API_KEY"
+            },
+            {
+              "name": "=Content-Type",
+              "value": "=application/json"
+            },
+            {
+              "name": "=Accept",
+              "value": "=application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        464,
+        -368
+      ],
+      "id": "f2d51a5b-0c73-4848-b1f9-17adf3554516",
+      "name": "Apollo org search fashion DACH"
+    },
+    {
+      "parameters": {
+        "jsCode": "function clean(v) {\n  return String(v || '').trim();\n}\n\nfunction hostFromUrl(url) {\n  try {\n    if (!url) return '';\n    const u = new URL(String(url).startsWith('http') ? url : `https://${url}`);\n    return u.hostname.toLowerCase().replace(/^www\\./, '');\n  } catch {\n    return '';\n  }\n}\n\nfunction cleanName(v) {\n  return clean(v)\n    .toLowerCase()\n    .replace(/^https?:\\/\\//i, '')\n    .replace(/^www\\./i, '')\n    .replace(/[^\\p{L}\\p{N}\\s]/gu, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nconst sheetRows = $items(\"read Opportunities for dedupe\", 0, 0).map(i => i.json);\n\nconst existingHosts = new Set();\nconst existingNames = new Set();\n\nfor (const row of sheetRows) {\n  const rowCompany = row[\"Company Name\"] || '';\n  const rowWebsite =\n    row[\"Website URL\"] ||\n    row[\"Website\"] ||\n    row.website_url ||\n    '';\n\n  const host = hostFromUrl(rowWebsite || rowCompany);\n  const name = cleanName(rowCompany);\n\n  if (host) existingHosts.add(host);\n  if (name) existingNames.add(name);\n}\n\nreturn items.map(item => {\n  const j = item.json;\n\n  const host =\n    clean(j[\"Website Host\"]) ||\n    hostFromUrl(j[\"Website URL\"] || j[\"Company Name\"]);\n\n  const name =\n    clean(j.company_name_clean) ||\n    cleanName(j[\"Company Name\"]);\n\n  const alreadyInSheet =\n    (host && existingHosts.has(host)) ||\n    (name && existingNames.has(name));\n\n  return {\n    json: {\n      ...j,\n      already_in_sheet: alreadyInSheet,\n      is_new_company: !alreadyInSheet\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        -496
+      ],
+      "id": "5f00c473-5193-4fa7-b175-1591133d37eb",
+      "name": "mark already in sheet"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Leads CRM2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1458518171,
+          "mode": "list",
+          "cachedResultName": "Opportunities",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=1458518171"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -160,
+        -448
+      ],
+      "id": "cddff093-e14f-4e24-a2ff-3710c4e18467",
+      "name": "read Opportunities for dedupe",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/mixed_companies/search?organization_locations[]=Germany&organization_locations[]=Austria&organization_locations[]=Switzerland&q_organization_keyword_tags[]=fashion&q_organization_keyword_tags[]=apparel&q_organization_keyword_tags[]=clothing&q_organization_keyword_tags[]=accessories&q_organization_keyword_tags[]=jewelry&q_organization_keyword_tags[]=shoes&organization_num_employees_ranges[]=11,50&organization_num_employees_ranges[]=51,200&organization_num_employees_ranges[]=201,500&page=1&per_page=5",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_APOLLO_API_KEY"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        256,
+        -416
+      ],
+      "id": "b2883e8b-19f5-4248-8986-241a70493427",
+      "name": "Apollo org search fashion DACH1"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        672,
+        -496
+      ],
+      "id": "799a5275-4441-43e0-9cb8-ed3c861ce63d",
+      "name": "wait for sheet + apollo"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "75106250-7285-400d-89e2-b6f3f9a3e3c1",
+              "leftValue": "={{$json.is_new_company === true}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        -448
+      ],
+      "id": "f173a9d6-aa0b-46cc-b669-48e90482e49d",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Leads CRM2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1458518171,
+          "mode": "list",
+          "cachedResultName": "Opportunities",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=1458518171"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Company Name": "={{$json[\"Company Name\"]}}",
+            "Notes": "Imported via Apollo Fashion DACH",
+            "State/Country": "={{$json.organization_country \n\n ''}}",
+            "Name": "Bot",
+            "Reachout gemacht?": "Ja",
+            "Art des Reachout": "Cold E-Mail",
+            "Website": "={{$json[\"Website URL\"]}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Company Name",
+              "displayName": "Company Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reachout gemacht?",
+              "displayName": "Reachout gemacht?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Art des Reachout",
+              "displayName": "Art des Reachout",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Antwort erhalten",
+              "displayName": "Antwort erhalten",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Antwortqualität",
+              "displayName": "Antwortqualität",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Interesse am Webshop-Audit",
+              "displayName": "Interesse am Webshop-Audit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Termin vereinbart?",
+              "displayName": "Termin vereinbart?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead Status",
+              "displayName": "Lead Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name (First)",
+              "displayName": "Name (First)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Telefonnummer",
+              "displayName": "Telefonnummer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "E-Mail",
+              "displayName": "E-Mail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Website",
+              "displayName": "Website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "$ Value",
+              "displayName": "$ Value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Linkedin Profile",
+              "displayName": "Linkedin Profile",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "State/Country",
+              "displayName": "State/Country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date Created",
+              "displayName": "Date Created",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Opportunity Last Modified",
+              "displayName": "Opportunity Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1312,
+        -272
+      ],
+      "id": "3bb0a47f-57ad-4a15-bdaa-e3c0ded0397b",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "parse contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse contact": {
+      "main": [
+        [
+          {
+            "node": "findet mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "normalize lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "überprüft gibt es eine mail": {
+      "main": [
+        [
+          {
+            "node": "IF website_url vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update row in sheet falls keine mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "findet mail": {
+      "main": [
+        [
+          {
+            "node": "prepare mail input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare mail input": {
+      "main": [
+        [
+          {
+            "node": "IF website_url vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse gpt output": {
+      "main": [
+        [
+          {
+            "node": "build final mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build final mail": {
+      "main": [
+        [
+          {
+            "node": "format final mail html",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalize lead": {
+      "main": [
+        [
+          {
+            "node": "Apollo search primär",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontakt-Auswahl": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF website_url vorhanden?": {
+      "main": [
+        [
+          {
+            "node": "fetch website",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch website": {
+      "main": [
+        [
+          {
+            "node": "build shop context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "schreibt den text MIT website": {
+      "main": [
+        [
+          {
+            "node": "parse gpt output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "schreibt den text OHNE website": {
+      "main": [
+        [
+          {
+            "node": "parse gpt output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build shop context": {
+      "main": [
+        [
+          {
+            "node": "language_guess1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "fetch website",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "language_guess",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "language_guess": {
+      "main": [
+        [
+          {
+            "node": "schreibt den text OHNE website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "language_guess1": {
+      "main": [
+        [
+          {
+            "node": "schreibt den text MIT website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo search primär": {
+      "main": [
+        [
+          {
+            "node": "IF brauchbare Kontakte vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF brauchbare Kontakte vorhanden?": {
+      "main": [
+        [
+          {
+            "node": "rank contacts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Apollo search fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo search fallback": {
+      "main": [
+        [
+          {
+            "node": "rank contacts1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rank contacts1": {
+      "main": [
+        [
+          {
+            "node": "Kontakt-Auswahl",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rank contacts": {
+      "main": [
+        [
+          {
+            "node": "Kontakt-Auswahl",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format final mail html": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request Draft": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet falls Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "parse web search output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse web search output": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Apollo org search fashion DACH1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo org search fashion DACH": {
+      "main": [
+        []
+      ]
+    },
+    "normalize sourced orgs": {
+      "main": [
+        [
+          {
+            "node": "wait for sheet + apollo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read Opportunities for dedupe": {
+      "main": [
+        []
+      ]
+    },
+    "Apollo org search fashion DACH1": {
+      "main": [
+        [
+          {
+            "node": "normalize sourced orgs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "wait for sheet + apollo": {
+      "main": [
+        [
+          {
+            "node": "mark already in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mark already in sheet": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [],
+        []
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
